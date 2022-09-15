@@ -1,0 +1,15 @@
+getwd()
+#import dataset 
+GDP_per_capita_table <- read.csv("~/GDP_per_capita_table.csv")
+
+#to view dataset
+GDP_per_capita_table
+
+#views the summary of the dataset like min,max,median,mean,mode
+summary(GDP_per_capita_table)
+
+#to access variables present in the data framework without calling dataframe
+attach(GDP_per_capita_table)
+
+#is used to plot between belgium france (GDP)
+plot(Belgium,France)
