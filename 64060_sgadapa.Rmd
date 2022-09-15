@@ -1,3 +1,6 @@
+#dataset has been downloaded from this website
+https://www.kaggle.com/datasets/kanteya/resale-dataset-jan-2018
+
 getwd()
 #import dataset 
 GDP_per_capita_table <- read.csv("~/GDP_per_capita_table.csv")
