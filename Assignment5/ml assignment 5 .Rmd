@@ -1,0 +1,91 @@
+---
+title: "Assignment 5 suraj gadapa"
+author: "Adari Lohit"
+date: "2022-11-15"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(cluster)
+library(caret)
+library(dendextend)
+library(factoextra)
+```
+
+```{r}
+c<-read.csv("C:/Users/suraj/Downloads/Cereals.csv")
+c<- na.omit(c)
+head(c)
+```
+
+#Normalizing the dataset
+```{r}
+c<- c[,4:16]
+c <- scale(c,center = TRUE,scale = TRUE)
+head(c)
+```
+
+#Task-1.Apply hierarchical clustering to the data using Euclidean distance to the normalized measurements. 
+#Use Agnes to compare the clustering from single linkage, complete 
+#linkage, average linkage, and Ward. Choose the best method.
+```{r}
+Euclidean_Dist <- dist(c, method = "euclidean")
+# Hierarchical clustering using Complete Linkage
+cl1 <- hclust(Euclidean_Dist, method = "complete" )
+# Plot the obtained dendrogram
+plot(cl1, cex = 0.6, hang = -1)
+round(cl1$height, 3)
+```
+
+# Compute with agnes and with different linkage methods
+```{r}
+cl_single <- agnes(c, method = "single")
+print(cl_single$ac)
+cl_complete <- agnes(c, method = "complete")
+print(cl_complete$ac)
+cl_average <- agnes(c, method = "average")
+print(cl_average$ac)
+cl_ward <- agnes(c, method = "ward")
+print(cl_ward$ac)
+```
+#The agglomerative coefficient obtained by Ward's method is the largest. 
+
+#visualizing  the dendrogram
+```{r}
+cl_Ward <- agnes(Euclidean_Dist, method = "ward")
+pltree(cl_Ward, cex = 0.6, hang = -1, main = "Dendrogram of agnes for ward") 
+```
+#Task-2.How many clusters would you choose?
+```{r}
+#The largest difference in height can be used to determine the k value, hence K =5 is the best option.
+cl_Ward <- hclust(Euclidean_Dist,method = "ward.D2")
+clust_comp <- cutree(cl_Ward, k=5)
+table(clust_comp)
+plot(cl_Ward,cex=0.6)
+rect.hclust(cl_Ward, k = 5, border = 2:10,)
+Temp <- cbind(as.data.frame(cbind(c,clust_comp)))
+#Visualizing the clusters in Scatter plot
+fviz_cluster(list(data=Euclidean_Dist, cluster = clust_comp))
+```
+
+#Task-3.The elementary public schools would like to choose a set of cereals to include in their
+#daily cafeterias. Every day a different cereal is offered, but all cereals should support a
+#healthy diet. For this goal, you are requested to find a cluster of “healthy cereals.”
+```{r}
+Healthy_cereal <- na.omit(read.csv("C:/Users/suraj/Downloads/Cereals.csv"))
+Healthy_cereal<- cbind(Healthy_cereal,clust_comp)
+mean(Healthy_cereal[Healthy_cereal$clust_comp==1,"rating"])
+mean(Healthy_cereal[Healthy_cereal$clust_comp==2,"rating"])
+mean(Healthy_cereal[Healthy_cereal$clust_comp==3,"rating"])
+mean(Healthy_cereal[Healthy_cereal$clust_comp==4,"rating"])
+mean(Healthy_cereal[Healthy_cereal$clust_comp==5,"rating"])
+```
+
+
+Cluster1 has the highest rating (73.84446), so we'll choose it as a healthy cereal.
