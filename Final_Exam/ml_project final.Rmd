@@ -1,0 +1,192 @@
+---
+title: "ml-project"
+author: "suraj gadapa"
+date: "2022-12-03"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(recommenderlab)   #for recommendation
+library(reshape2)
+library(data.table)
+library(ggplot2)   
+```
+
+
+#retrieving the data
+```{r}
+movie_data<-read.csv("C:/Users/suraj/Downloads/archive (3)/imdb_top_1000.csv",stringsAsFactors = FALSE)
+str(movie_data)
+```
+
+```{r}
+md<- na.omit(movie_data) #gives the data after removing the missing values.
+summary(md)
+```
+
+
+```{r}
+sd(md$IMDB_Rating)
+sd(md$Meta_score)
+sd(md$No_of_Votes)
+IQR(md$IMDB_Rating)
+IQR(md$Meta_score)
+IQR(md$No_of_Votes)
+```
+
+```{r}
+rating<-table(md$IMDB_Rating)
+barplot(rating,main="movie rating comaprision",ylab="number",
+        xlab="rating",col=("lightblue"),legend=rownames(rating))
+
+```
+
+```{r}
+certificate_pie<-table(md$Certificate)
+library(lessR)
+PieChart(certificate_pie,hole = 0,values="%",data=md$Certificate,color = rainbow(2),main=" certificiation movie types")
+```
+
+```{r}
+library(plotrix)
+lab<-paste0(round(certificate_pie/sum(certificate_pie)*100,2),"%")
+
+pie3D(certificate_pie,col= rainbow(2),labels=lab ,labelcex = 0.75,explode = 0.1)
+```
+
+```{r}
+hist(md$IMDB_Rating, col = "BLUE", xlab = " rating",ylab = "frequency",labels = TRUE)
+```
+```{r}
+boxplot(md$IMDB_Rating, col = "red", border = "black",main="boxplot for descriptive analytics of IMDB rating", labels=TRUE)
+```
+
+```{r}
+hist(md$Meta_score, col = "BLUE", xlab = "meta score",ylab = "frequency",labels = TRUE)
+```
+
+```{r}
+plot(density(md$IMDB_Rating),
+     col="green",
+     main="IMDB rating",
+     xlab="rating",
+     ylab="density")
+polygon(density(md$IMDB_Rating),col = "black")
+
+```
+
+```{r}
+plot(density(md$Meta_score),
+     col="green",
+     main="density plot based on score",
+     xlab="meta score",
+     ylab="density")
+polygon(density(md$Meta_score),col = "blue")
+```
+
+```{r}
+library(factoextra)
+md1<-na.omit(md)
+```
+
+```{r}
+library(dplyr)
+
+md2<-select_if(md1,is.numeric)
+```
+
+```{r}
+library(dplyr)
+fviz_nbclust(md2,kmeans,method="wss")+labs(subtitle = "elbow method")
+```
+
+```{r}
+
+library(purrr)
+set.seed(123)
+#functionto calculate total intra-cluster sum of squares(euclidean distance)
+ics<-function(k){
+  kmeans(md2[,1:3],k,iter.max =100,nstart = 100,algorithm = "Lloyd" )$tot.withinss
+  
+}
+k_values<-1:3
+ics_values<-map_dbl(k_values,ics)
+
+plot(k_values,ics_values,
+     type="b",pch=19,frame=FALSE,
+     xlab="no of clusters",
+     ylab="total instra-clusters sum of squares" 
+       )
+```
+
+```{r}
+library(cluster)
+library(gridExtra)
+library(grid)
+k1<-kmeans(md2[,1:3],2,iter.max=100,nstart=50,algorithm="Lloyd")
+
+s1<-plot(silhouette(k1$cluster,dist(md2[,1:3],"euclidean")))
+
+
+k2<-kmeans(md2[,1:3],3 ,iter.max = 100,nstart = 50,algorithm = "Lloyd")
+s2<-plot(silhouette(k2$cluster,dist(md2[,1:3],"euclidean")))
+```
+
+
+#we make use of the fviz_nbcluster() function
+#to determine and visualize the optimal number of cluster
+
+```{r}
+library(NbClust)
+library(factoextra)
+fviz_nbclust(md2[,1:3], kmeans, method = "silhouette")+
+labs(subtitle = "Silhouette method")
+```
+#gap statastic method
+```{r}
+set.seed(123)
+stat_gap<-clusGap(md2[,1:3],FUN=kmeans,nstart=25,K.max = 10,B=50)
+fviz_gap_stat(stat_gap)
+```
+#select cluster2
+```{r}
+k2
+```
+
+```{r}
+pcluster<-prcomp(md2[,1:3],scale. = FALSE)
+summary(pcluster)
+pcluster$rotation[,1:2]
+```
+
+```{r}
+set.seed(123)
+ggplot(md2,aes(x=IMDB_Rating,y=No_of_Votes))+
+  geom_point(stat="identity",aes(color=as.factor(k2$cluster)))+
+  scale_color_discrete(name="  ",breaks=c("1","2","3"),
+                       labels=c("cluster1","cluster2","cluster3"), ggtitle("segments of demographics",subtitle = "using K-means clustering"))
+```
+
+```{r}
+set.seed(123)
+ggplot(md2,aes(x=IMDB_Rating,y=No_of_Votes))+
+  geom_point(stat="identity",aes(color=as.factor(k2$cluster)))+
+  scale_color_discrete(name="  ",breaks=c("1","2","3"),
+                       labels=c("cluster1","cluster2","cluster3"), ggtitle("segments of demographics",subtitle = "using K-means clustering"))
+```
+
+```{r}
+kcols=function(vec){cols=rainbow(length(unique(vec)))
+return (cols[as.numeric(as.factor(vec))])}
+digCluster<-k2$cluster; dignm<-as.character(digCluster);
+plot(pcluster$x[,1:2],col=kcols(digCluster),pch=19,xlab="kmeans",ylab="classes")
+legend("bottomleft",unique(dignm),fill = unique(kcols(digCluster)))
+```
+
+
